@@ -41,7 +41,7 @@
 // - Danjel McGougan (CRC-Table-Generator)
 //
 
-#include <Arduino.h>
+//#include <Arduino.h>
 
 // Set this to 0 for smaller 32BIT-CRC-Tables:
 #define CRC_BIGTABLES 1
@@ -53,7 +53,7 @@
 
 
 // ================= DEFINES ===================
-#if defined(KINETISK)
+#if defined(KINETISK) | defined(ROS_TEENSY_CRC)
 #define CRC_SW 0
 #define CRC_FLAG_NOREFLECT         (((1<<31) | (1<<30)) | ((0<<29) | (0<<28))) //refin=false refout=false
 #define CRC_FLAG_REFLECT           (((1<<31) | (0<<30)) | ((1<<29) | (0<<28))) //Reflect in- and outgoing bytes (refin=true refout=true)
@@ -65,7 +65,7 @@
 #endif
 
 
-#if defined(KINETISK)
+#if defined(KINETISK) | defined(ROS_TEENSY_CRC)
 
 #include "mk20dx128.h"
 
