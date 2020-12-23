@@ -11,6 +11,15 @@
 
 #include "Packetizer.h"
 
+// You need to define your platform the same as is defined
+// on your microcontroller. As far as I can tell, this mostly
+// has to do with selecting which type of CRC to use, and some
+// business with STL containers vs. hideataki's custom containers
+// I was using Teensy, so I added my
+// own define, but you could also #define Arduino, or use the
+// default #define for Teensy 3.x #define KINETISK
+#define ROS_TEENSY_CRC
+
 #define PACKETIZER_USE_CRC_AS_DEFAULT
 bool USE_CRC = true;
 
