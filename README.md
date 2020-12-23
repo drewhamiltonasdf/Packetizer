@@ -14,9 +14,12 @@ Thanks, hideataki, great code.
 # Install / Use
 
 In a catkin workspace
-- git clone https://github.com/drewhamiltonasdf/Packetizer.git
-- catkin_make
-- rosrun packetizer packetizer_example
+
+```
+git clone https://github.com/drewhamiltonasdf/Packetizer.git
+catkin_make
+rosrun packetizer packetizer_example
+```
 
 This is a very barebones ROS example. It doesn't even use ROS_INFO, it uses std::cout.
 There is also no handling of the actual serial communication (yet). I'm doing that with
