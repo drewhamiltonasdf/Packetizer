@@ -1,4 +1,4 @@
-# Packetizer for ROS
+# Packetizer for ROS (Robot Operating System)
 
 This repo has some modifications by Drew Hamilton to hidetaki's 
 excellent Packetizer code for embedded.
