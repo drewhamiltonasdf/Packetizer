@@ -36,4 +36,7 @@ add_library(${PROJECT_NAME}
    ros_packetizer.cpp
 )
 
+# rosrun packetizer packetizer_example
+add_executable(${PROJECT_NAME}_example ${CMAKE_CURRENT_SOURCE_DIR}/ROS_example/src/ros_example.cpp)
+
 target_link_libraries(${PROJECT_NAME}  ${catkin_LIBRARIES} )
