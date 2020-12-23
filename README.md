@@ -11,6 +11,16 @@ I'm using this with CRC between ROS and a Teensy 3.6 and it works great.
 
 Thanks, hideataki, great code.
 
+# Install / Use
+
+In a catkin workspace
+- git clone https://github.com/drewhamiltonasdf/Packetizer.git
+- catkin_make
+- rosrun packetizer packetizer_example
+
+This is a very barebones ROS example. It doesn't even use ROS_INFO, it uses std::cout.
+There is also no handling of the actual serial communication (yet). I'm doing that with
+Boost. I intended for this to have no extra bloat.
 
 binary data packetization encoder / decoder based on COBS / SLIP encoding
 
