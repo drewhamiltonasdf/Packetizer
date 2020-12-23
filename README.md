@@ -1,9 +1,13 @@
-# Packetizer
+# Packetizer for ROS
 
-This repo has some modifications to hidetaki's excellent Packetizer.
+This repo has some modifications by Drew Hamilton to hidetaki's 
+excellent Packetizer code for embedded.
+
 Additions mostly include addition of some #defines and CMakeLists
 so the package can be built using ROS and used as a library in 
-roscpp nodes.
+roscpp nodes on a PC.
+
+I'm using this with CRC between ROS and a Teensy 3.6 and it works great.
 
 Thanks, hideataki, great code.
 
