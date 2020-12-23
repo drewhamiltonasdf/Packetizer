@@ -1,5 +1,13 @@
 # Packetizer
 
+This repo has some modifications to hidetaki's excellent Packetizer.
+Additions mostly include addition of some #defines and CMakeLists
+so the package can be built using ROS and used as a library in 
+roscpp nodes.
+
+Thanks, hideataki, great code.
+
+
 binary data packetization encoder / decoder based on COBS / SLIP encoding
 
 
