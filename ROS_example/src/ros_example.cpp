@@ -7,6 +7,7 @@
 //#include <ros/ros.h>
 #include <iostream>
 #include <iomanip>              //For std::setprecision
+#include <string.h>             //For strcpy (if you need to set up char[] fields)
 //#include <std_msgs/String.h>
 //#include <vector>
 
@@ -36,15 +37,71 @@ int main(int argc, char **argv)
 
     Packetizer::Packet packet_in;
     
+
+    // Here are two examples. In the first example (commented out) we unpack our packet into doubles.
+    // In the second example we use a custom struct with two different datatypes in it.
+    // You can change the template type and get any kind of type you want as long as that's
+    // what you made the packet out of in the first place. In other words, if you have a datatype that is 4 bytes long
+    // your packet ought to be divisible by 4. If not, you'll get an error.
+    // See note below about the dangers of using structs between platforms. I merely include the
+    // example to highlight that these are template functions that work with any data type.
+
+    // You can use something like this if you are on a bigEndian platform. Both of these funcs are defined in type_packer.h
+    // if (!LittleEndian())
+    //    ByteSwap(&asdf, sizeof(float));   
+
+    /*
+    //Here's and example using just doubles
     //Add in a non-char sized thing to our packet using this function defined in type_packer.h
-    //std::setprecision(9);
-    double asdf1 = -123.666; push_back_type(packet_in.data, asdf1);
-    double asdf2 = 42.978; push_back_type(packet_in.data, asdf2);
-    double asdf3 = -11128.000001; push_back_type(packet_in.data, asdf3);
-    
-    // This will cause an error, we can't have a variadic packet with multiple types
-    // float asdf4 =   17.934; push_back_type(packet_in.data, asdf4);    
-    
+            double asdf1 = -123.666; push_back_type(packet_in.data, asdf1);
+            double asdf2 = 42.978; push_back_type(packet_in.data, asdf2);
+            double asdf3 = -11128.000001; push_back_type(packet_in.data, asdf3);
+            // This would cause an error, we can't have a variadic packet with multiple types
+            // <!-- NO GOOD --> float asdf4 = 17.934; push_back_type(packet_in.data, asdf4);    
+            std::vector<double> new_container;      //<-- This is what we'll unpack our data into.
+    */    
+
+    // Here's an example using a struct
+    // This is kind of a megh idea because C++ doesn't
+    // guarantee that structs will be stored the same on
+    // different platforms. If you want to do this, you
+    // should do quite a bit of testing to make sure the
+    // memory layout is padded the same. Obviously you can't
+    // use member data that isn't fixed in size or that uses
+    // pointers. Think char[n], float, double etc. not std::vector<String>
+
+            struct Goober
+            {
+                char label[15];     // Don't use Strings etc. use fixed length char arrays
+                uint8_t flags = 0;  // I have a few functions for setting individual bits in a byte, see below
+                double d;
+                float f;
+            };
+
+            Goober a; strcpy(a.label, "Label1"); a.d = -11128.0001; a.f = 12.99;
+            Goober b; strcpy(b.label, "next1"); b.d = -21128.0001; b.f = 22.99;
+            Goober c; strcpy(c.label, "helloworld!"); c.d = -31128.0001; c.f = 32.99;
+
+            // I'm putting the binary literal example in here
+            // TO UNDERSCORE THE FACT THAT ENDIANESS CAN BE AN ISSUE!!!
+            // Notice in the printout for 'a' that byte #0 is 1 and the
+            // rest are zero. It's read from right to left.
+            a.flags = 0b00000001;      //C++11 or later
+
+            //setFlag(uint8_t& flag_char, uint8_t pos, bool bit_val) { flag_char ^= (-bit_val ^ flag_char) & (1UL << pos); }
+            setFlag(b.flags, 3, true);
+            setFlag(b.flags, 4, true);
+
+            //void toggleFlag(uint8_t& flag_char, uint8_t pos) { flag_char ^= 1UL << pos; }
+            toggleFlag(c.flags, 6);
+
+            push_back_type(packet_in.data, a);
+            push_back_type(packet_in.data, b);
+            push_back_type(packet_in.data, c);
+
+            std::vector<Goober> new_container;      //<-- This is what we'll unpack our data into.
+
+   
     packet_in.index = 123;
 
     const auto& p_buff = Packetizer::encode(packet_in.index, packet_in.data.data(), packet_in.data.size(), USE_CRC);
@@ -65,12 +122,7 @@ int main(int argc, char **argv)
     std::cout << "CRC is expected to be = " << (int)crcx::crc8(packet_in.data.data(), packet_in.data.size()) << std::endl;
     std::cout << "CRC from encoded packet is = " << (int)p_buff.data.at(static_cast<int>(p_buff.data.size()) - 2) << std::endl;
     //std::cout << "CRC = " << (int)FastCRC::crc8(packet_out.data.data(), p_buff.data.size());
-
-    // Here we unpack our packet into doubles. But you can change the template type
-    // and get any kind of type you want as long as that's what you made the packet out
-    // of in the first place. In other words, if you have a datatype that is 4 bytes long
-    // your packet ought to be divisible by 4. If not, you'll get an error.
-    std::vector<double> new_container;
+    
     bool success = unpack_type(packet_out.data, new_container);
 
     if (success)
@@ -78,21 +130,20 @@ int main(int argc, char **argv)
         std::cout << std::endl;
         for (int i = 0; i<new_container.size(); i++)
         {
-            std::cout << "Thing #" << i << "=" << std::setprecision(11) << new_container.at(i) << std::endl;
+            //std::cout << "Thing #" << i << "=" << std::setprecision(11) << new_container.at(i) << std::endl;
+            std::cout << "Thing #" << i << "=" << new_container.at(i).d << ",\t\t" << new_container.at(i).f << ",\t\tLabel: " << new_container.at(i).label << std::endl;
+            printFlags(new_container.at(i).flags);
         }
     }
     else
     {
-        std::cout << "Something went wrong unpacking your packet." << std::endl;
+        std::cout << "Something went wrong unpacking your packet. You have to make it the same way you unpack it." << std::endl;
     }
 
     //std::vector<unsigned char> test_vec;
     //float asdf = -1256.123;
     //double asdf2 = -666.123456;
 
-    // You can use something like this if you are on a bigEndian platform:
-    //if (!LittleEndian())
-    //    ByteSwap(&asdf, sizeof(float));
     /*
         push_back_type(test_vec, asdf);
         push_back_type(test_vec, asdf2);

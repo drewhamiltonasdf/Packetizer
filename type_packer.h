@@ -5,18 +5,6 @@
 #include <iostream>         //Only used by printFlags, comment out if you like
 #include <vector>
 
-//Set flag at position x to true/false
-void setFlag(uint8_t& flag_char, uint8_t pos, bool bit_val) { flag_char ^= (-bit_val ^ flag_char) & (1UL << pos); }
-
-//Flip flag at position
-void toggleFlag(uint8_t& flag_char, uint8_t pos) { flag_char ^= 1UL << pos; }
-
-//Get flag value at specified bit position
-bool getFlagAt(uint8_t& flag_char, uint8_t pos) {  return (flag_char >> pos) & 1U; }
-
-//For debugging, cout a flags bits
-void printFlags(uint8_t& flag_char) { for (int i = 0; i < 8; i++) {  std::cout << "Flag #" << i << " = " << getFlagAt(flag_char, i); } }
-
 //Append one item of type T to a std::vector<char>
 //for example, break a float (4 bytes) into 4 chars and push_back each
 //similarly a double (8 bytes) into 8 chars.
@@ -73,20 +61,24 @@ bool LittleEndian()
     return *((char *)&test) == 1;
 }
 
-///  // splits a 32bit into 4 8bits
- /*
-rightshifty32 (int16_t argn)
-{
-unsigned char bytes[4];
-bytes[0] = (argn >> 24) & 0xFF;     //i = 0     sizeof(T) = 4       sizeof(T)-i-1 = 3     (sizeof(T)-i-1) * 8 = 24
-bytes[1] = (argn >> 16) & 0xFF;     //i = 1     sizeof(T) = 4       sizeof(T)-i-1 = 2     (sizeof(T)-i-1) * 8 = 16
-bytes[2] = (argn >> 8) & 0xFF;      //i = 2     sizeof(T) = 4       sizeof(T)-i-1 = 1     (sizeof(T)-i-1) * 8 = 8       
-bytes[3] = argn & 0xFF;             //i = 3     sizeof(T) = 4       sizeof(T)-i-1 = 0     (sizeof(T)-i-1) * 8 = 0
-printf("0x%x 0x%x 0x%x 0x%x\n", (unsigned char)bytes[0],
-                        (unsigned char)bytes[1],
-                        (unsigned char)bytes[2],
-                        (unsigned char)bytes[3]);
+//Set flag at position x to true/false
+void setFlag(uint8_t& flag_char, uint8_t pos, bool bit_val) { flag_char ^= (-bit_val ^ flag_char) & (1UL << pos); }
+
+//Flip flag at position
+void toggleFlag(uint8_t& flag_char, uint8_t pos) { flag_char ^= 1UL << pos; }
+
+//Get flag value at specified bit position
+bool getFlagAt(uint8_t& flag_char, uint8_t pos) {  return (flag_char >> pos) & 1U; }
+
+//For debugging, cout a flags bits
+void printFlags(uint8_t& flag_char) 
+{ 
+    //std::cout << std::endl;    
+    for (int i = 0; i < 8; i++) 
+    {
+        std::cout << "\t[" << i << "]:" << (bool)getFlagAt(flag_char, i);  
+    }
+    std::cout << std::endl;
 }
-*/
 
 #endif
