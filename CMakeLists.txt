@@ -34,6 +34,7 @@ include_directories(
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
    ros_packetizer.cpp
+   type_packer.cpp
 )
 
 # rosrun packetizer packetizer_example

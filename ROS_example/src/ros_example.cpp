@@ -10,6 +10,7 @@
 //#include <vector>
 
 #include "Packetizer.h"
+#include "type_packer.h"
 
 // You need to define your platform the same as is defined
 // on your microcontroller. As far as I can tell, this mostly
@@ -30,11 +31,14 @@ int main(int argc, char **argv)
 
 
     Packetizer::Packet packet_in;
-    for (int i = 0; i < 23; i++)
-    {
-        packet_in.data.push_back(i);
-    }
-    packet_in.index = 253;
+    
+    //Add in a non-char sized thing to our packet using this function defined in type_packer.h
+    double asdf1 = -60.0234; push_back_type(packet_in.data, asdf1);
+    double asdf2 = -63.1234; push_back_type(packet_in.data, asdf2);
+    double asdf3 =  67.934; push_back_type(packet_in.data, asdf3);
+    
+    // This will cause an error, we can't have a variadic packet with multiple types
+    // float asdf4 =   17.934; push_back_type(packet_in.data, asdf4);    
 
     const auto& p_buff = Packetizer::encode(packet_in.data.data(), packet_in.data.size(), USE_CRC);
     const auto& packet_out = Packetizer::decode(p_buff.data.data(), p_buff.data.size(), USE_CRC);
@@ -45,9 +49,60 @@ int main(int argc, char **argv)
 
         std::cout << "index_out = " << packet_out.index;
 
-        if (packet_in.data != packet_out.data) {std::cout << "test 1 failed!";}
+        if (packet_in.data != packet_out.data) {std::cout << "test 1 failed!"<< std::endl;}
         else                         
-            {std::cout << "test 1 success!";}
+            {std::cout << "test 1 success!"<< std::endl;}
+
+    // Here we unpack our packet into doubles. But you can change the template type
+    // and get any kind of type you want as long as that's what you made the packet out
+    // of in the first place. In other words, if you have a datatype that is 4 bytes long
+    // your packet ought to be divisible by 4. If not, you'll get an error.
+    std::vector<double> new_container;
+    bool success = unpack_type(packet_out.data, new_container);
+
+    if (success)
+    {
+        std::cout << std::endl;
+        for (int i = 0; i<new_container.size(); i++)
+        {
+            std::cout << "Thing #" << i << "=" << new_container.at(i) << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "Something went wrong unpacking your packet." << std::endl;
+    }
+
+    //std::vector<unsigned char> test_vec;
+    //float asdf = -1256.123;
+    //double asdf2 = -666.123456;
+
+    // You can use something like this if you are on a bigEndian platform:
+    //if (!LittleEndian())
+    //    ByteSwap(&asdf, sizeof(float));
+    /*
+        push_back_type(test_vec, asdf);
+        push_back_type(test_vec, asdf2);
+
+        std::cout << std::endl << "Bytes in float" << std::endl;
+        std::cout << "-----------------" << std::endl;
+        int index = 0;
+        unsigned char p[4];
+        for (auto things : test_vec)
+        {
+            std::cout << index++ << "\t[" << (int)things << "]" << std::endl;
+        }
+        
+        p[0] = test_vec.at(0);
+        p[1] = test_vec.at(1);
+        p[2] = test_vec.at(2);
+        p[3] = test_vec.at(3);
+
+        std::cout << (float)*(float*)p << std::endl;
+        std::cout << "Float size = " << sizeof(float) << std::endl;
+        std::cout << "Double size = " << sizeof(double) << std::endl;
+        std::cout << LittleEndian() << std::endl;
+    */
 
     //while (ros::ok())
     //{
