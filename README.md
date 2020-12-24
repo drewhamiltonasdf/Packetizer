@@ -50,7 +50,6 @@ Here's a snippet:
                 std::cout << std::endl;
                 for (int i = 0; i<new_container.size(); i++)
                 {
-                    //std::cout << "Thing #" << i << "=" << std::setprecision(11) << new_container.at(i) << std::endl;
                     std::cout << "Thing #" << i << "=" << new_container.at(i).d << ",\t\t" << new_container.at(i).f << ",\t\tLabel: " << new_container.at(i).label << std::endl;
                     printFlags(new_container.at(i).flags);
                 }
