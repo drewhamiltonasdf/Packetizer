@@ -10,6 +10,55 @@ roscpp nodes on a PC.
 Recently added some functionality for packing floats/doubles etc into
 the packets. Check out the example code ros_example.cpp.
 
+Please check out ros_example.cpp if you want to see what this can do.
+I leave it completely up to you to make sure that you are communicating
+between platforms that compile structs with the same memory layout.
+If you want to be really safe, just send standard data types (doubles, floats etc)
+
+Here's a snippet:
+```
+            struct Goober
+            {
+                char label[15];     // Don't use Strings etc. use fixed length char arrays
+                uint8_t flags = 0;  // I have a few functions for setting individual bits in a byte, see below
+                double d;
+                float f;
+            };
+
+            Goober a; strcpy(a.label, "Label1"); a.d = -11128.0001; a.f = 12.99;
+            Goober b; strcpy(b.label, "next1"); b.d = -21128.0001; b.f = 22.99;
+            Goober c; strcpy(c.label, "helloworld!"); c.d = -31128.0001; c.f = 32.99;
+            
+            a.flags = 0b00000001;            
+            
+            setFlag(b.flags, 3, true);
+            setFlag(b.flags, 4, true);
+
+            push_back_type(packet_in.data, a);
+            push_back_type(packet_in.data, b);
+            push_back_type(packet_in.data, c);
+            
+                ...
+            
+            const auto& p_buff = Packetizer::encode(packet_in.index, packet_in.data.data(), packet_in.data.size(), USE_CRC);
+            
+            std::vector<Goober> new_container;
+            bool success = unpack_type(packet_out.data, new_container);
+            
+            if (success)
+            {
+                std::cout << std::endl;
+                for (int i = 0; i<new_container.size(); i++)
+                {
+                    //std::cout << "Thing #" << i << "=" << std::setprecision(11) << new_container.at(i) << std::endl;
+                    std::cout << "Thing #" << i << "=" << new_container.at(i).d << ",\t\t" << new_container.at(i).f << ",\t\tLabel: " << new_container.at(i).label << std::endl;
+                    printFlags(new_container.at(i).flags);
+                }
+            }
+            
+            
+```
+
 I'm using this with CRC between ROS and a Teensy 3.6 and it works great.
 
 Thanks, hideataki, great code.
