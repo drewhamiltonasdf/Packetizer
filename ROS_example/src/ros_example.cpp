@@ -6,6 +6,7 @@
 
 //#include <ros/ros.h>
 #include <iostream>
+#include <iomanip>              //For std::setprecision
 //#include <std_msgs/String.h>
 //#include <vector>
 
@@ -36,9 +37,10 @@ int main(int argc, char **argv)
     Packetizer::Packet packet_in;
     
     //Add in a non-char sized thing to our packet using this function defined in type_packer.h
-    uint8_t asdf1 = 'A'; push_back_type(packet_in.data, asdf1);
-    uint8_t asdf2 = 'B'; push_back_type(packet_in.data, asdf2);
-    uint8_t asdf3 = 'C'; push_back_type(packet_in.data, asdf3);
+    //std::setprecision(9);
+    double asdf1 = -123.666; push_back_type(packet_in.data, asdf1);
+    double asdf2 = 42.978; push_back_type(packet_in.data, asdf2);
+    double asdf3 = -11128.000001; push_back_type(packet_in.data, asdf3);
     
     // This will cause an error, we can't have a variadic packet with multiple types
     // float asdf4 =   17.934; push_back_type(packet_in.data, asdf4);    
@@ -68,7 +70,7 @@ int main(int argc, char **argv)
     // and get any kind of type you want as long as that's what you made the packet out
     // of in the first place. In other words, if you have a datatype that is 4 bytes long
     // your packet ought to be divisible by 4. If not, you'll get an error.
-    std::vector<uint8_t> new_container;
+    std::vector<double> new_container;
     bool success = unpack_type(packet_out.data, new_container);
 
     if (success)
@@ -76,7 +78,7 @@ int main(int argc, char **argv)
         std::cout << std::endl;
         for (int i = 0; i<new_container.size(); i++)
         {
-            std::cout << "Thing #" << i << "=" << new_container.at(i) << std::endl;
+            std::cout << "Thing #" << i << "=" << std::setprecision(11) << new_container.at(i) << std::endl;
         }
     }
     else
