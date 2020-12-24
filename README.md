@@ -7,6 +7,9 @@ Additions mostly include addition of some #defines and CMakeLists
 so the package can be built using ROS and used as a library in 
 roscpp nodes on a PC.
 
+Recently added some functionality for packing floats/doubles etc into
+the packets. Check out the example code ros_example.cpp.
+
 I'm using this with CRC between ROS and a Teensy 3.6 and it works great.
 
 Thanks, hideataki, great code.
