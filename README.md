@@ -1,13 +1,17 @@
 # Packetizer for ROS (Robot Operating System)
 
 This repo has some modifications by Drew Hamilton to hidetaki's 
-excellent Packetizer code for embedded.
+excellent Packetizer code for embedded. Initially the additions 
+were just the inclusion of CMakeLists so the package can be built
+using ROS catkin_make and used as a library in roscpp nodes on a PC.
 
-Additions mostly include addition of some #defines and CMakeLists
-so the package can be built using ROS and used as a library in 
-roscpp nodes on a PC.
+The dream is to be able to send custom non-ROS messages with very little 
+overhead in binary format between microcontrollers and PC's without having
+to re-invent the wheel. Sending everything as strings and then parsing all
+of those strings is slow, inefficient and very problematic if you are
+sending a lot of data.
 
-Recently added some functionality for packing floats/doubles etc into
+I recently added some functionality for packing floats/doubles etc into
 the packets. Check out the example code ros_example.cpp.
 
 Please check out ros_example.cpp if you want to see what this can do.
@@ -58,7 +62,7 @@ Here's a snippet:
             
 ```
 
-I'm using this with CRC between ROS and a Teensy 3.6 and it works great.
+I'm using this with CRC between ROS and a Teensy 3.6 and it works great. 
 
 Thanks, hideataki, great code.
 
