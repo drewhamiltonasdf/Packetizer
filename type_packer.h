@@ -8,14 +8,7 @@
 
 void ByteSwap(void * data, int size);
 
-//Append one item of type T to a std::vector<char>
-//for example, break a float (4 bytes) into 4 chars and push_back each
-//similarly a double (8 bytes) into 8 chars.
-//char into the vector
-//don't be an idiot and try to append some complicated container that
-//uses pointers etc. behind the scenes. If you try to append an entire
-//std::vector for example, you'll end up with a bunch of chars for the
-//memory addresses of things. etc. etc.
+//Basic template for adding simple data types
 template<typename T>
 void push_back_type(std::vector<unsigned char>& vec, T& thing)
 {
@@ -27,9 +20,64 @@ void push_back_type(std::vector<unsigned char>& vec, T& thing)
         }
 }
 
+
+//Override for arrays.
+template<typename T>
+void push_back_type(std::vector<unsigned char>& vec, T* thing, int size)
+{
+    for (int pos = 0; pos < size; pos++)
+    {
+        unsigned char *p = (unsigned char *)&thing[pos];
+
+        for (int i = 0; i < sizeof(T); i++)
+        {
+            vec.push_back(p[i]);
+        }
+    }
+}
+
+
+//Override for std::vectors.
+template<typename T>
+void push_back_type(std::vector<unsigned char>& vec, std::vector<T>& thing)
+{
+    for (auto discrete_thingamajig : thing)
+    {
+        push_back_type(vec, discrete_thingamajig);
+    }
+}
+
+
+//Override for passing in const values. Careful with type deduction!
+template<typename T>
+void push_back_type_const(std::vector<unsigned char>& vec, const T thing)
+{
+        unsigned char *p = (unsigned char *)&thing;
+        
+        for (int i = 0; i < sizeof(T); i++)
+        {
+            vec.push_back(p[i]);
+        }
+}
+
+//Variadic template recurses above functions so we can pass an endlessly long list of return containers
+//template <typename T, typename... Rest>
+//int unpack_type(const std::vector<unsigned char>& raw_buff, int pos, T &t, Rest&... rest) {
+//  return unpack_type(raw_buff, unpack_type(raw_buff, pos, t), rest...);
+//}
+
+//Variadic template Push back a list of junk
+template <typename T, typename... Rest>
+void push_back_type(std::vector<unsigned char>& raw_buff, T &t, Rest&... rest) 
+{
+    push_back_type(raw_buff, t);
+    push_back_type(raw_buff, rest...);
+}
+
+
 //This is for array returns (data types like float[], double[], int[] etc.)
 template<typename T>
-bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, T *thing, int arr_size)
+int unpack_type(const std::vector<unsigned char>& raw_buff, int pos, T *thing, int arr_size)
 {
     bool overflow = false;
     for (int data_position = 0; data_position < arr_size; data_position++)
@@ -44,12 +92,12 @@ bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, T *thing,
             thing[data_position] = (*((T *) &temp[0]));
         }
     }
-    return true;
+    return pos+(arr_size * sizeof(T));
 }
 
-//This is for single-value returns (data types like float, double, int etc.)
+//This is for single-value returns (data types like float, double, int etc.), passed by ref
 template<typename T>
-bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, T &thing)
+int unpack_type(const std::vector<unsigned char>& raw_buff, int pos, T &thing)
 {
     bool overflow = false;
     uint8_t temp[sizeof(T)];
@@ -61,12 +109,12 @@ bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, T &thing)
     if (!overflow) {
         thing = (*((T *) &temp[0]));
     }
-    return true;
+    return pos+(sizeof(T));
 }
 
 //This is for std::vector returns (std::vector<float>, std::vector<int> etc)
 template<typename T>
-bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, std::vector<T>& new_container)
+int unpack_type(const std::vector<unsigned char>& raw_buff, int pos, std::vector<T>& new_container)
 {
         bool overflow = false;
         for (int data_position = 0; data_position < new_container.size(); data_position++)
@@ -82,8 +130,22 @@ bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, std::vect
             }
         }
         
-        return overflow;
+        return pos+(new_container.size() * sizeof(T));;
     
+}
+
+//Variadic template recurses above functions so we can pass an endlessly long list of return containers
+template <typename T, typename... Rest>
+int unpack_type(const std::vector<unsigned char>& raw_buff, int pos, T &t, Rest&... rest) {
+  return unpack_type(raw_buff, unpack_type(raw_buff, pos, t), rest...);
+}
+
+//Version that takes no initial pos, and assumes zero
+template <typename T, typename... Rest>
+int unpack_type(const std::vector<unsigned char>& raw_buff, T &t, Rest&... rest) 
+{
+  int pos = 0;
+  return unpack_type(raw_buff, unpack_type(raw_buff, pos, t), rest...);
 }
 
 void ByteSwap(void * data, int size)
@@ -114,7 +176,7 @@ void printFlags(uint8_t& flag_char)
     //std::cout << std::endl;    
     for (int i = 0; i < 8; i++) 
     {
-        std::cout << "\t[" << i << "]:" << (bool)getFlagAt(flag_char, i);  
+        std::cout << "[" << i << "]:" << (bool)getFlagAt(flag_char, i) << "   ";  
     }
     std::cout << std::endl;
 }
