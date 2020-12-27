@@ -14,7 +14,9 @@ code.
 
 Here's an example of the savings for sending 4 floats. Lets take the following
 array as an example{-123.66, 12345.98, -88.99002, 87654.99}:
+
             -Binary: 16 bytes
+            
             -String: 38 bytes + '/r/n' = 40 bytes
 
 If you've used strings before, you know the above example is really a best-case
