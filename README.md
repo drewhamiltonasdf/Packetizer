@@ -53,6 +53,7 @@ In a catkin workspace
 git clone https://github.com/drewhamiltonasdf/Packetizer.git
 catkin_make
 rosrun packetizer packetizer_example
+rosrun packetizer packetizer_example2
 ```
 
 This is a very barebones ROS example. It doesn't even use ROS_INFO, it uses std::cout.
