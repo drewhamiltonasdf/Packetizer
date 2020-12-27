@@ -3,41 +3,6 @@
 This repo has some modifications by Drew Hamilton to hidetaki's 
 excellent Packetizer code.
 
-This package allows you to easily create custom binary packets that
-you can send between an Arduino/Teensy etc and a PC with almost no
-overhead. The dream is to be able to send data in binary instead of
-using strings because it is much much faster and requires your MCU
-to spend less time processing serial data and more time doing interesting
-things with it. It is also an obscene pain in the ass to come up with
-a new string-parsing system everytime you want to write some new Arduino
-code.
-
-Here's an example of the savings for sending 4 floats. Lets take the following
-array as an example{-123.66, 12345.98, -88.99002, 87654.99}:
-
-            -Binary: 16 bytes
-            
-            -String: 38 bytes + '/r/n' = 40 bytes
-
-If you've used strings before, you know the above example is really a best-case
-scenario. So why not just send binary data blindly? Well, the difficulty with 
-sending binary data is that you end up with carriage-returns, null-characters,
-end-of-line chars etc all over the place. Where does your packet begin and
-where does it end? COBS formatting solves that problem, and my utilities help
-by making it easy to serialize a bunch of different data types into a binary
-byte array. With the two, you should be able to send just about any custom
-packet you want with speed and no bandwidth or buffering problems...
-
-I recently added some functionality for packing floats/doubles etc into
-the packets. Check out the example code ros_example.cpp.
-
-Please check out ros_example.cpp and ros_example2.cpp
-As long as you take your packets apart the same way you put them together
-and you pay some attention to the way I've constructed packets in the 
-examples you'll be good to go. These examples make it possible to test
-the code out on a PC, so you don't need to send and recieve. The 
-actual serial communication is up to you (at the moment).
-
 Here's a snippet:
 ```
     Packetizer::Packet packet_in;
