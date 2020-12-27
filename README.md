@@ -1,70 +1,82 @@
 # Packetizer for ROS (Robot Operating System)
 
 This repo has some modifications by Drew Hamilton to hidetaki's 
-excellent Packetizer code for embedded. Initially the additions 
-were just the inclusion of CMakeLists so the package can be built
-using ROS catkin_make and used as a library in roscpp nodes on a PC.
+excellent Packetizer code.
 
-The dream is to be able to send custom non-ROS messages with very little 
-overhead in binary format between microcontrollers and PC's without having
-to re-invent the wheel. Sending everything as strings and then parsing all
-of those strings is slow, inefficient and very problematic if you are
-sending a lot of data.
+This package allows you to easily create custom binary packets that
+you can send between an Arduino/Teensy etc and a PC with almost no
+overhead. The dream is to be able to send data in binary instead of
+using strings because it is much much faster and requires your MCU
+to spend less time processing serial data and more time doing interesting
+things with it. It is also an obscene pain in the ass to come up with
+a new string-parsing system everytime you want to write some new Arduino
+code.
+
+Here's an example of the savings for sending 4 floats. Lets take the following
+array as an example{-123.66, 12345.98, -88.99002, 87654.99}:
+            -Binary: 16 bytes
+            -String: 38 bytes + '/r/n' = 40 bytes
+
+If you've used strings before, you know the above example is really a best-case
+scenario. So why not just send binary data blindly? Well, the difficulty with 
+sending binary data is that you end up with carriage-returns, null-characters,
+end-of-line chars etc all over the place. Where does your packet begin and
+where does it end? COBS formatting solves that problem, and my utilities help
+by making it easy to serialize a bunch of different data types into a binary
+byte array. With the two, you should be able to send just about any custom
+packet you want with speed and no bandwidth or buffering problems...
 
 I recently added some functionality for packing floats/doubles etc into
 the packets. Check out the example code ros_example.cpp.
 
-Please check out ros_example.cpp if you want to see what this can do.
-I leave it completely up to you to make sure that you are communicating
-between platforms that compile structs with the same memory layout.
-If you want to be really safe, just send standard data types (doubles, floats etc)
+Please check out ros_example.cpp and ros_example2.cpp
+As long as you take your packets apart the same way you put them together
+and you pay some attention to the way I've constructed packets in the 
+examples you'll be good to go. These examples make it possible to test
+the code out on a PC, so you don't need to send and recieve. The 
+actual serial communication is up to you (at the moment).
 
 Here's a snippet:
 ```
-            struct Goober
-            {
-                char label[15];     // Don't use Strings etc. use fixed length char arrays
-                uint8_t flags = 0;  // I have a few functions for setting individual bits in a byte, see below
-                double d;
-                float f;
-            };
+    Packetizer::Packet packet_in;
+    packet_in.index = JOINT_POSITION_PACKET;
 
-            Goober a; strcpy(a.label, "Label1"); a.d = -11128.0001; a.f = 12.99;
-            Goober b; strcpy(b.label, "next1"); b.d = -21128.0001; b.f = 22.99;
-            Goober c; strcpy(c.label, "helloworld!"); c.d = -31128.0001; c.f = 32.99;
-            
-            a.flags = 0b00000001;            
-            
-            setFlag(b.flags, 3, true);
-            setFlag(b.flags, 4, true);
+    uint8_t MCU_flags; 
+        setFlag(MCU_flags, UNUSED_FLAG0,    0);
+        setFlag(MCU_flags, UNUSED_FLAG1,    0);
+        setFlag(MCU_flags, UNUSED_FLAG2,    0);
+        setFlag(MCU_flags, UNUSED_FLAG3,    0);
+        setFlag(MCU_flags, COMPLETED_FLAG,  0);
+        setFlag(MCU_flags, WAITING_FLAG,    0);
+        setFlag(MCU_flags, BUSY_FLAG,       1);
+        setFlag(MCU_flags, ERROR_FLAG,      0);
+    
+    std::vector<float> JOINT_POSITIONS{0, -3.1415, 0, 6.2, 0, 99, 0};
 
-            push_back_type(packet_in.data, a);
-            push_back_type(packet_in.data, b);
-            push_back_type(packet_in.data, c);
-            
-                ...
-            
-            const auto& p_buff = Packetizer::encode(packet_in.index, packet_in.data.data(), packet_in.data.size(), USE_CRC);
-            
-            std::vector<Goober> new_container;
-            bool success = unpack_type(packet_out.data, new_container);
-            
-            if (success)
-            {
-                std::cout << std::endl;
-                for (int i = 0; i<new_container.size(); i++)
-                {
-                    std::cout << "Thing #" << i << "=" << new_container.at(i).d << ",\t\t" << new_container.at(i).f << ",\t\tLabel: " << new_container.at(i).label << std::endl;
-                    printFlags(new_container.at(i).flags);
-                }
-            }
-            
-            
+    push_back_type(packet_in.data, MCU_flags, JOINT_POSITIONS);
+
+    uint8_t receive_flags;
+    std::vector<float> receive_JOINTS(NUM_JOINTS);
+
+    const auto& p_buff = Packetizer::encode(packet_in.index, packet_in.data.data(), packet_in.data.size(), USE_CRC);
+    const auto& packet_out = Packetizer::decode(p_buff.data.data(), p_buff.data.size(), USE_INDEX, USE_CRC);
+
+    unpack_type(packet_out.data, receive_flags, receive_JOINTS);
+
+    std::cout << std::endl << "MCU Flags: "; printFlags(receive_flags);
+
+    std::cout << std::endl << "Joint Positions after unpacking: " << std::endl;
+    int i = 0;
+    for (auto joint_pos : receive_JOINTS)
+    {
+        std::cout << "  [" << i++ << "]: " << std::setprecision(5) << joint_pos << std::endl;
+    }
+    std::cout << std::endl;
 ```
 
 I'm using this with CRC between ROS and a Teensy 3.6 and it works great. 
 
-Thanks, hideataki, great code.
+Thanks, hideataki, great code. Please read all of their README stuff below...
 
 # Install / Use
 
@@ -120,7 +132,7 @@ If you use them, original data array is modified like:
 | ------ | ------- | ------ |
 | 1 byte | N bytes | 1 byte |
 
-CRC8 will be calcurated including index byte.
+CRC8 will be calculated including index byte.
 After that, these byte arrays will be coverted to COBS / SLIP encoding.
 
 
