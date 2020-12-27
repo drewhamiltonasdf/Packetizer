@@ -50,58 +50,27 @@ int main(int argc, char **argv)
     // if (!LittleEndian())
     //    ByteSwap(&asdf, sizeof(float));   
 
-    /*
     //Here's and example using just doubles
     //Add in a non-char sized thing to our packet using this function defined in type_packer.h
-            double asdf1 = -123.666; push_back_type(packet_in.data, asdf1);
-            double asdf2 = 42.978; push_back_type(packet_in.data, asdf2);
-            double asdf3 = -11128.000001; push_back_type(packet_in.data, asdf3);
-            // This would cause an error, we can't have a variadic packet with multiple types
-            // <!-- NO GOOD --> float asdf4 = 17.934; push_back_type(packet_in.data, asdf4);    
-            std::vector<double> new_container;      //<-- This is what we'll unpack our data into.
-    */    
+    double asdf1 = -123.666; 
+    double asdf2 = 42.978; 
+    double asdf3 = -11128.000001; 
+    int val1 = 123456;
+    int val2 = 654321;
+    
+    push_back_type(packet_in.data, asdf1);
+    push_back_type(packet_in.data, asdf2);
+    push_back_type(packet_in.data, asdf3);
 
-    // Here's an example using a struct
-    // This is kind of a megh idea because C++ doesn't
-    // guarantee that structs will be stored the same on
-    // different platforms. If you want to do this, you
-    // should do quite a bit of testing to make sure the
-    // memory layout is padded the same. Obviously you can't
-    // use member data that isn't fixed in size or that uses
-    // pointers. Think char[n], float, double etc. not std::vector<String>
+    push_back_type(packet_in.data, val1);
+    push_back_type(packet_in.data, val2);
+    
+    std::vector<double> double_container(3);      //<-- This is what we'll unpack our data into.
+    std::vector<int> int32_container(2);          //<-- Size your containers appropriately, or you will be reading non-sense
 
-            struct Goober
-            {
-                char label[15];     // Don't use Strings etc. use fixed length char arrays
-                uint8_t flags = 0;  // I have a few functions for setting individual bits in a byte, see below
-                double d;
-                float f;
-            };
+    //int32_container.resize(2);
+    //double_container.resize(3);                //Initialize for 3 doubles
 
-            Goober a; strcpy(a.label, "Label1"); a.d = -11128.0001; a.f = 12.99;
-            Goober b; strcpy(b.label, "next1"); b.d = -21128.0001; b.f = 22.99;
-            Goober c; strcpy(c.label, "helloworld!"); c.d = -31128.0001; c.f = 32.99;
-
-            // I'm putting the binary literal example in here
-            // TO UNDERSCORE THE FACT THAT ENDIANESS CAN BE AN ISSUE!!!
-            // Notice in the printout for 'a' that byte #0 is 1 and the
-            // rest are zero. It's read from right to left.
-            a.flags = 0b00000001;      //C++11 or later
-
-            //setFlag(uint8_t& flag_char, uint8_t pos, bool bit_val) { flag_char ^= (-bit_val ^ flag_char) & (1UL << pos); }
-            setFlag(b.flags, 3, true);
-            setFlag(b.flags, 4, true);
-
-            //void toggleFlag(uint8_t& flag_char, uint8_t pos) { flag_char ^= 1UL << pos; }
-            toggleFlag(c.flags, 6);
-
-            push_back_type(packet_in.data, a);
-            push_back_type(packet_in.data, b);
-            push_back_type(packet_in.data, c);
-
-            std::vector<Goober> new_container;      //<-- This is what we'll unpack our data into.
-
-   
     packet_in.index = 123;
 
     const auto& p_buff = Packetizer::encode(packet_in.index, packet_in.data.data(), packet_in.data.size(), USE_CRC);
@@ -121,52 +90,41 @@ int main(int argc, char **argv)
 
     std::cout << "CRC is expected to be = " << (int)crcx::crc8(packet_in.data.data(), packet_in.data.size()) << std::endl;
     std::cout << "CRC from encoded packet is = " << (int)p_buff.data.at(static_cast<int>(p_buff.data.size()) - 2) << std::endl;
-    //std::cout << "CRC = " << (int)FastCRC::crc8(packet_out.data.data(), p_buff.data.size());
     
-    bool success = unpack_type(packet_out.data, new_container);
+    // Demonstration of unpacking into std::vectors
+    // the function is templated, so it will take any
+    // kind of vector, but you need to resize() the vector
+    // to tell the function how many to grab from the packet
+    int pos0 = 0;
+    int pos1 = double_container.size() * sizeof(double);
+    
+    unpack_type(packet_out.data, pos0, double_container);
+    unpack_type(packet_out.data, pos1, int32_container);
 
-    if (success)
+    // Demonstration of how to unpack single values of basic data types
+    // and c-style arrays of basic data types
+    double single_val;
+    double two_vals[2];
+
+    unpack_type(packet_out.data, pos0, single_val);
+    unpack_type(packet_out.data, pos0, two_vals, 2);
+
+    std::cout << "doubles: " << std::endl;
+    for (auto thing : double_container)
     {
-        std::cout << std::endl;
-        for (int i = 0; i<new_container.size(); i++)
-        {
-            //std::cout << "Thing #" << i << "=" << std::setprecision(11) << new_container.at(i) << std::endl;
-            std::cout << "Thing #" << i << "=" << new_container.at(i).d << ",\t\t" << new_container.at(i).f << ",\t\tLabel: " << new_container.at(i).label << std::endl;
-            printFlags(new_container.at(i).flags);
-        }
+        std::cout << thing << std::endl;
     }
-    else
+    std::cout << std::endl;
+
+    std::cout << "int32_t's: " << std::endl;
+    for (auto thing : int32_container)
     {
-        std::cout << "Something went wrong unpacking your packet. You have to make it the same way you unpack it." << std::endl;
+        std::cout << thing << std::endl;
     }
+    std::cout << std::endl;
 
-    //std::vector<unsigned char> test_vec;
-    //float asdf = -1256.123;
-    //double asdf2 = -666.123456;
-
-    /*
-        push_back_type(test_vec, asdf);
-        push_back_type(test_vec, asdf2);
-
-        std::cout << std::endl << "Bytes in float" << std::endl;
-        std::cout << "-----------------" << std::endl;
-        int index = 0;
-        unsigned char p[4];
-        for (auto things : test_vec)
-        {
-            std::cout << index++ << "\t[" << (int)things << "]" << std::endl;
-        }
-        
-        p[0] = test_vec.at(0);
-        p[1] = test_vec.at(1);
-        p[2] = test_vec.at(2);
-        p[3] = test_vec.at(3);
-
-        std::cout << (float)*(float*)p << std::endl;
-        std::cout << "Float size = " << sizeof(float) << std::endl;
-        std::cout << "Double size = " << sizeof(double) << std::endl;
-        std::cout << LittleEndian() << std::endl;
-    */
+    std::cout << "single val = " << single_val << std::endl;
+    std::cout << "array vals = " << two_vals[0] << ", " << two_vals[1] << std::endl;
 
     //while (ros::ok())
     //{

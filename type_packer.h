@@ -5,6 +5,9 @@
 #include <iostream>         //Only used by printFlags, comment out if you like
 #include <vector>
 
+
+void ByteSwap(void * data, int size);
+
 //Append one item of type T to a std::vector<char>
 //for example, break a float (4 bytes) into 4 chars and push_back each
 //similarly a double (8 bytes) into 8 chars.
@@ -24,27 +27,62 @@ void push_back_type(std::vector<unsigned char>& vec, T& thing)
         }
 }
 
+//This is for array returns (data types like float[], double[], int[] etc.)
 template<typename T>
-bool unpack_type(const std::vector<unsigned char>& raw_buff, std::vector<T>& new_container)
+bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, T *thing, int arr_size)
 {
-    if (raw_buff.size() % sizeof(T) == 0) 
+    bool overflow = false;
+    for (int data_position = 0; data_position < arr_size; data_position++)
     {
-        for (int data_position = 0; data_position < (raw_buff.size() / sizeof(T)) ; data_position++)
+        uint8_t temp[sizeof(T)];
+        for (unsigned int i = 0 + pos; i < sizeof(T) + pos; i++ )
+        {
+            if (i < raw_buff.size()) { temp[i-pos] = (uint8_t)(raw_buff[data_position*sizeof(T)+i]); }
+            else {overflow = true;}
+        }
+        if (!overflow) {
+            thing[data_position] = (*((T *) &temp[0]));
+        }
+    }
+    return true;
+}
+
+//This is for single-value returns (data types like float, double, int etc.)
+template<typename T>
+bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, T &thing)
+{
+    bool overflow = false;
+    uint8_t temp[sizeof(T)];
+    for (unsigned int i = 0 + pos; i < sizeof(T) + pos; i++ )
+    {
+        if (i < raw_buff.size()) { temp[i-pos] = (uint8_t)(raw_buff[i]); }
+        else {overflow = true;}
+    }
+    if (!overflow) {
+        thing = (*((T *) &temp[0]));
+    }
+    return true;
+}
+
+//This is for std::vector returns (std::vector<float>, std::vector<int> etc)
+template<typename T>
+bool unpack_type(const std::vector<unsigned char>& raw_buff, int &pos, std::vector<T>& new_container)
+{
+        bool overflow = false;
+        for (int data_position = 0; data_position < new_container.size(); data_position++)
         {
             uint8_t temp[sizeof(T)];
-            for (unsigned int i = 0; i < sizeof(T); i++ )
+            for (unsigned int i = 0 + pos; i < sizeof(T) + pos; i++ )
             {
-                temp[i] = (uint8_t)(raw_buff[data_position*sizeof(T)+i]);
+                if (i < raw_buff.size()) { temp[i-pos] = (uint8_t)(raw_buff[data_position*sizeof(T)+i]); }
+                else {overflow = true;}
             }
-            new_container.push_back(*((T *) &temp[0]));
+            if (!overflow) {
+                new_container.at(data_position) = (*((T *) &temp[0]));
+            }
         }
-        return true;
-    }
-    else
-    {
-        throw std::runtime_error ("\nYour input container is not divisible by the number of bytes in the type specified in by your target container.\n");
-        return false;
-    }
+        
+        return overflow;
     
 }
 
